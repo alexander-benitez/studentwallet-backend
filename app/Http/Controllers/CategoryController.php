@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Http\Resources\CategoryResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -32,15 +33,25 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories')->where(function ($query) use ($userId, $request) {
+                    return $query->where('user_id', $userId)
+                                 ->where('type', $request->input('type'));
+                }),
+            ],
             'type' => 'required|in:ingreso,gasto',
         ]);
 
         $category = Category::create([
             'name'       => $validated['name'],
             'type'       => $validated['type'],
-            'user_id'    => Auth::id(),
+            'user_id'    => $userId,
             'is_default' => false,
         ]);
 
@@ -82,8 +93,20 @@ class CategoryController extends Controller
             ], 403);
         }
 
+        $userId = Auth::id();
+
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:100',
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories')->where(function ($query) use ($userId, $request, $category) {
+                    $type = $request->input('type', $category->type);
+                    return $query->where('user_id', $userId)
+                                 ->where('type', $type);
+                })->ignore($category->id),
+            ],
             'type' => 'sometimes|required|in:ingreso,gasto',
         ]);
 
