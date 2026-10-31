@@ -15,6 +15,9 @@ return new class extends Migration
             $table->enum('type', ['ingreso', 'gasto']);
             $table->boolean('is_default')->default(false);
             $table->timestamps();
+
+            // Regla de unicidad: evita duplicados por usuario, nombre y tipo
+            $table->unique(['user_id', 'name', 'type']);
         });
     }
 

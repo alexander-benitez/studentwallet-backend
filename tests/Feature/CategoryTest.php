@@ -61,6 +61,27 @@ class CategoryTest extends TestCase
         ]);
     }
 
+    public function test_no_se_puede_crear_categoria_duplicada_para_el_mismo_usuario_y_tipo()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        Category::create([
+            'name'       => 'Libros',
+            'type'       => 'gasto',
+            'user_id'    => $user->id,
+            'is_default' => false,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+                         ->postJson('/api/categories', [
+                             'name' => 'Libros',
+                             'type' => 'gasto',
+                         ]);
+
+        $response->assertStatus(422);
+    }
+
     public function test_falla_creacion_con_tipo_invalido()
     {
         $user = User::factory()->create();
@@ -161,5 +182,19 @@ class CategoryTest extends TestCase
         $responseDel->assertStatus(200);
 
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
+    }
+
+    public function test_relacion_usuario_con_sus_categorias()
+    {
+        $user = User::factory()->create();
+        Category::create([
+            'name'       => 'Ahorro Beca',
+            'type'       => 'ingreso',
+            'user_id'    => $user->id,
+            'is_default' => false,
+        ]);
+
+        $this->assertCount(1, $user->categories);
+        $this->assertEquals('Ahorro Beca', $user->categories->first()->name);
     }
 }
