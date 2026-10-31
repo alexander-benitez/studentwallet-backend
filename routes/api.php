@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\BalanceController;
 use App\Http\Resources\UserResource;
 
 // Rutas públicas
@@ -27,4 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Endpoints REST de Movimientos Financieros
     Route::apiResource('transactions', TransactionController::class);
+
+    // Endpoint de Cálculo de Saldo Financiero
+    Route::get('/balance', [BalanceController::class, 'getBalance']);
 });
