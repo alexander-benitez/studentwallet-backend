@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\BalanceController;
+use App\Http\Controllers\GoalController;
 use App\Http\Resources\UserResource;
 
 // Rutas públicas
@@ -31,6 +32,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Endpoint de Cálculo de Saldo Financiero
     Route::get('/balance', [BalanceController::class, 'getBalance']);
+
+    // Endpoints REST de Metas y Aportes
+    Route::apiResource('goals', GoalController::class);
+    Route::post('/goals/{goal}/contributions', [GoalController::class, 'addContribution']);
 });
 
 use App\Http\Controllers\AdminController;
