@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\BalanceController;
+use App\Http\Controllers\GoalController;
 use App\Http\Resources\UserResource;
 
 // Rutas públicas
@@ -31,4 +32,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Endpoint de Cálculo de Saldo Financiero
     Route::get('/balance', [BalanceController::class, 'getBalance']);
+
+    // Endpoints REST de Metas y Aportes
+    Route::apiResource('goals', GoalController::class);
+    Route::post('/goals/{goal}/contributions', [GoalController::class, 'addContribution']);
+});
+
+use App\Http\Controllers\AdminController;
+
+// Rutas autenticadas de estudiantes y administración
+Route::middleware('auth:sanctum')->group(function () {
+    // Envío de sugerencias por estudiantes
+    Route::post('/suggestions', [AdminController::class, 'storeSuggestion']);
+    Route::get('/suggestions', [AdminController::class, 'mySuggestions']);
+
+    // Panel Administrativo protegido
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::put('/users/{id}/status', [AdminController::class, 'toggleUserStatus']);
+        Route::get('/suggestions', [AdminController::class, 'suggestions']);
+    });
 });
