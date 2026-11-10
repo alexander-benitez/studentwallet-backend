@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\BalanceController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Resources\UserResource;
 
@@ -37,6 +38,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Endpoints REST de Metas y Aportes
     Route::apiResource('goals', GoalController::class);
     Route::post('/goals/{goal}/contributions', [GoalController::class, 'addContribution']);
+
+    // Endpoints REST de Presupuestos Mensuales
+    Route::apiResource('budgets', BudgetController::class);
 
     // Endpoint de Recomendaciones Personalizadas
     Route::get('/recommendations', [RecommendationController::class, 'index']);
