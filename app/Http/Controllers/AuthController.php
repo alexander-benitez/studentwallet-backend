@@ -53,6 +53,15 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        // VALIDACIÓN: Si el usuario está desactivado, no puede iniciar sesión
+        if ($user->is_active === 0) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tu cuenta ha sido desactivada. Contacta al administrador.',
+            ], 403);
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
