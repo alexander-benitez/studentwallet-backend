@@ -39,6 +39,7 @@ use App\Http\Controllers\AdminController;
 Route::middleware('auth:sanctum')->group(function () {
     // Envío de sugerencias por estudiantes
     Route::post('/suggestions', [AdminController::class, 'storeSuggestion']);
+    Route::get('/suggestions', [AdminController::class, 'mySuggestions']);
 
     // Panel Administrativo protegido
     Route::middleware('admin')->prefix('admin')->group(function () {

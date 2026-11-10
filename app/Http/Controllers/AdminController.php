@@ -81,4 +81,15 @@ class AdminController extends Controller
             "data" => $suggestion
         ], 201);
     }
+    public function mySuggestions(Request $request)
+    {
+        $suggestions = Suggestion::where('user_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $suggestions
+        ], 200);
+    }
 }
