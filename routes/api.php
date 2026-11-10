@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\BalanceController;
 use App\Http\Controllers\GoalController;
+use App\Http\Controllers\RecommendationController;
 use App\Http\Resources\UserResource;
 
 // Rutas públicas
@@ -36,6 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Endpoints REST de Metas y Aportes
     Route::apiResource('goals', GoalController::class);
     Route::post('/goals/{goal}/contributions', [GoalController::class, 'addContribution']);
+
+    // Endpoint de Recomendaciones Personalizadas
+    Route::get('/recommendations', [RecommendationController::class, 'index']);
 });
 
 use App\Http\Controllers\AdminController;

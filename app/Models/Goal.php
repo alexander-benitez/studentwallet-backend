@@ -26,6 +26,7 @@ class Goal extends Model
 
     protected $appends = [
         'progress_percentage',
+        'calculated_status',
     ];
 
     public function user()
@@ -45,5 +46,20 @@ class Goal extends Model
         }
 
         return 0;
+    }
+
+    public function getCalculatedStatusAttribute()
+    {
+        if ($this->status === 'completed') {
+            return 'completed';
+        }
+
+        if ($this->deadline !== null
+            && $this->deadline->lessThan(today())
+            && $this->current_amount < $this->target_amount) {
+            return 'expired';
+        }
+
+        return 'active';
     }
 }
