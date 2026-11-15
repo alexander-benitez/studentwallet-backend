@@ -92,4 +92,28 @@ class AdminController extends Controller
             'data'   => $suggestions
         ], 200);
     }
+        public function updateSuggestionStatus(Request $request, $id)
+    {
+        $suggestion = Suggestion::find($id);
+
+        if (! $suggestion) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Sugerencia no encontrada',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:pendiente,leida,resuelta',
+        ]);
+
+        $suggestion->status = $validated['status'];
+        $suggestion->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Estado actualizado correctamente',
+            'data'    => $suggestion,
+        ], 200);
+    }
 }

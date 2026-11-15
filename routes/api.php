@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/users', [AdminController::class, 'users']);
         Route::put('/users/{id}/status', [AdminController::class, 'toggleUserStatus']);
+        Route::put('/suggestions/{id}', [AdminController::class, 'updateSuggestionStatus']);
         Route::get('/suggestions', [AdminController::class, 'suggestions']);
     });
 });
