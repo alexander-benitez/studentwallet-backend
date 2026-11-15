@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 // Rutas públicas
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Rutas protegidas (Requieren Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
