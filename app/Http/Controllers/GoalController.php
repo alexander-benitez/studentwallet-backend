@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\DB;
 use App\Models\Goal;
 use App\Models\GoalContribution;
 use Illuminate\Http\Request;
@@ -107,7 +107,7 @@ class GoalController extends Controller
         ], 200);
     }
 
-    public function addContribution(Request $request, $id)
+        public function addContribution(Request $request, $id)
     {
         $goal = Goal::where('user_id', Auth::id())->find($id);
 
@@ -118,25 +118,39 @@ class GoalController extends Controller
             ], 404);
         }
 
+        // Validación: la meta debe estar activa
+        if ($goal->status !== 'active') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'La meta no está activa',
+            ], 400);
+        }
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'note'   => 'nullable|string|max:500',
         ]);
 
-        $contribution = GoalContribution::create([
-            'goal_id' => $goal->id,
-            'user_id' => Auth::id(),
-            'amount'  => $validated['amount'],
-            'note'    => $validated['note'] ?? null,
-        ]);
+        // Usamos DB::transaction para evitar problemas de concurrencia
+        $contribution = DB::transaction(function () use ($goal, $validated) {
 
-        $goal->current_amount = $goal->current_amount + $validated['amount'];
+            $contribution = GoalContribution::create([
+                'goal_id' => $goal->id,
+                'user_id' => Auth::id(),
+                'amount'  => $validated['amount'],
+                'note'    => $validated['note'] ?? null,
+            ]);
 
-        if ($goal->current_amount >= $goal->target_amount && $goal->status === 'active') {
-            $goal->status = 'completed';
-        }
+            $goal->current_amount = $goal->current_amount + $validated['amount'];
 
-        $goal->save();
+            if ($goal->current_amount >= $goal->target_amount && $goal->status === 'active') {
+                $goal->status = 'completed';
+            }
+
+            $goal->save();
+
+            return $contribution;
+        });
 
         return response()->json([
             'status' => 'success',
