@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
-use App\Models\Category;
 use App\Http\Resources\TransactionResource;
+use App\Models\Category;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -23,7 +23,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => TransactionResource::collection($transactions),
+            'data' => TransactionResource::collection($transactions),
         ], 200);
     }
 
@@ -31,43 +31,44 @@ class TransactionController extends Controller
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'amount'      => 'required|numeric|gt:0',
-            'type'        => 'required|in:ingreso,gasto',
+            'amount' => 'required|numeric|gt:0',
+            'type' => 'required|in:ingreso,gasto',
             'description' => 'nullable|string|max:255',
-            'date'        => 'required|date',
+            'concepto' => 'nullable|string|max:255',
+            'date' => 'required|date',
         ]);
 
         $category = Category::find($validated['category_id']);
 
-        if (!$category->is_default && $category->user_id !== null && $category->user_id !== Auth::id()) {
+        if (! $category->is_default && $category->user_id !== null && $category->user_id !== Auth::id()) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'La categoría seleccionada no pertenece ni está disponible para el usuario autenticado',
             ], 403);
         }
 
         if ($category->type !== $validated['type']) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => "El tipo del movimiento ({$validated['type']}) no coincide con el tipo de la categoría seleccionada ({$category->type})",
             ], 422);
         }
 
         $transaction = Transaction::create([
-            'user_id'     => Auth::id(),
+            'user_id' => Auth::id(),
             'category_id' => $validated['category_id'],
-            'amount'      => $validated['amount'],
-            'type'        => $validated['type'],
-            'description' => $validated['description'] ?? null,
-            'date'        => $validated['date'],
+            'amount' => $validated['amount'],
+            'type' => $validated['type'],
+            'description' => $validated['concepto'] ?? $validated['description'] ?? null,
+            'date' => $validated['date'],
         ]);
 
         $transaction->load('category');
 
         return response()->json([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'Movimiento registrado exitosamente',
-            'data'    => new TransactionResource($transaction),
+            'data' => new TransactionResource($transaction),
         ], 201);
     }
 
@@ -75,7 +76,7 @@ class TransactionController extends Controller
     {
         if ($transaction->user_id !== Auth::id()) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'No autorizado para consultar este movimiento financiero',
             ], 403);
         }
@@ -84,7 +85,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => new TransactionResource($transaction),
+            'data' => new TransactionResource($transaction),
         ], 200);
     }
 
@@ -92,34 +93,39 @@ class TransactionController extends Controller
     {
         if ($transaction->user_id !== Auth::id()) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'No autorizado para modificar este movimiento financiero',
             ], 403);
         }
 
         $validated = $request->validate([
             'category_id' => 'sometimes|required|exists:categories,id',
-            'amount'      => 'sometimes|required|numeric|gt:0',
-            'type'        => 'sometimes|required|in:ingreso,gasto',
+            'amount' => 'sometimes|required|numeric|gt:0',
+            'type' => 'sometimes|required|in:ingreso,gasto',
             'description' => 'nullable|string|max:255',
-            'date'        => 'sometimes|required|date',
+            'concepto' => 'sometimes|nullable|string|max:255',
+            'date' => 'sometimes|required|date',
         ]);
+
+        if ($validated['concepto'] ?? null) {
+            $validated['description'] = $validated['concepto'];
+        }
 
         $targetCategoryId = $validated['category_id'] ?? $transaction->category_id;
         $targetType = $validated['type'] ?? $transaction->type;
 
         $category = Category::find($targetCategoryId);
 
-        if (!$category->is_default && $category->user_id !== null && $category->user_id !== Auth::id()) {
+        if (! $category->is_default && $category->user_id !== null && $category->user_id !== Auth::id()) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'La categoría seleccionada no pertenece ni está disponible para el usuario autenticado',
             ], 403);
         }
 
         if ($category->type !== $targetType) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => "El tipo del movimiento ({$targetType}) no coincide con el tipo de la categoría ({$category->type})",
             ], 422);
         }
@@ -128,9 +134,9 @@ class TransactionController extends Controller
         $transaction->load('category');
 
         return response()->json([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'Movimiento actualizado exitosamente',
-            'data'    => new TransactionResource($transaction),
+            'data' => new TransactionResource($transaction),
         ], 200);
     }
 
@@ -138,7 +144,7 @@ class TransactionController extends Controller
     {
         if ($transaction->user_id !== Auth::id()) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'No autorizado para eliminar este movimiento financiero',
             ], 403);
         }
@@ -146,7 +152,7 @@ class TransactionController extends Controller
         $transaction->delete();
 
         return response()->json([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'Movimiento eliminado exitosamente',
         ], 200);
     }

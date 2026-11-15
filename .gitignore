@@ -16,3 +16,8 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# OpenCode files
+.opencode/
+.ai-review.json
+AGENTS.md

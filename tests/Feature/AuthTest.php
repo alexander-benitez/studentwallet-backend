@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
 
 class AuthTest extends TestCase
 {
@@ -13,8 +13,8 @@ class AuthTest extends TestCase
     public function test_usuario_puede_registrarse()
     {
         $response = $this->postJson('/api/register', [
-            'name'     => 'Test User',
-            'email'    => 'test@example.com',
+            'name' => 'Test User',
+            'email' => 'test@example.com',
             'password' => 'password123',
         ]);
 
@@ -31,8 +31,8 @@ class AuthTest extends TestCase
         User::factory()->create(['email' => 'test@example.com']);
 
         $response = $this->postJson('/api/register', [
-            'name'     => 'Test User 2',
-            'email'    => 'test@example.com',
+            'name' => 'Test User 2',
+            'email' => 'test@example.com',
             'password' => 'password123',
         ]);
 
@@ -42,12 +42,12 @@ class AuthTest extends TestCase
     public function test_usuario_puede_hacer_login()
     {
         $user = User::factory()->create([
-            'email'    => 'login@example.com',
+            'email' => 'login@example.com',
             'password' => bcrypt('password123'),
         ]);
 
         $response = $this->postJson('/api/login', [
-            'email'    => 'login@example.com',
+            'email' => 'login@example.com',
             'password' => 'password123',
         ]);
 
@@ -59,7 +59,7 @@ class AuthTest extends TestCase
     public function test_login_falla_con_credenciales_incorrectas()
     {
         $response = $this->postJson('/api/login', [
-            'email'    => 'noexiste@example.com',
+            'email' => 'noexiste@example.com',
             'password' => 'incorrecta',
         ]);
 
@@ -78,7 +78,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->getJson('/api/user');
 
         $response->assertStatus(200)
@@ -93,7 +93,7 @@ class AuthTest extends TestCase
         $token = $user->createToken('auth-token')->plainTextToken;
 
         // Ejecutar logout
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->postJson('/api/logout');
 
         $response->assertStatus(200)
@@ -106,9 +106,57 @@ class AuthTest extends TestCase
         app('auth')->forgetGuards();
 
         // Al intentar acceder de nuevo, el token ya no existe en BD
-        $subsequentResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $subsequentResponse = $this->withHeader('Authorization', 'Bearer '.$token)
                                    ->getJson('/api/user');
 
         $subsequentResponse->assertStatus(401);
+    }
+
+    public function test_usuario_autenticado_puede_actualizar_su_perfil()
+    {
+        $user = User::factory()->create([
+            'name' => 'Nombre Viejo',
+            'email' => 'perfil@example.com',
+        ]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+                         ->putJson('/api/user', [
+                             'name' => 'Nombre Nuevo',
+                             'apellido' => 'Apellido Nuevo',
+                             'email' => 'perfilNuevo@example.com',
+                             'universidad' => 'ITCA-FEPADE',
+                             'carrera' => 'Desarrollo de Software',
+                         ]);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonPath('data.name', 'Nombre Nuevo')
+                 ->assertJsonPath('data.apellido', 'Apellido Nuevo')
+                 ->assertJsonPath('data.universidad', 'ITCA-FEPADE')
+                 ->assertJsonPath('data.carrera', 'Desarrollo de Software');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'name' => 'Nombre Nuevo',
+            'apellido' => 'Apellido Nuevo',
+            'email' => 'perfilNuevo@example.com',
+            'universidad' => 'ITCA-FEPADE',
+            'carrera' => 'Desarrollo de Software',
+        ]);
+    }
+
+    public function test_usuario_no_puede_actualizar_su_perfil_con_email_duplicado()
+    {
+        User::factory()->create(['email' => 'otro@example.com']);
+        $user = User::factory()->create(['email' => 'perfil@example.com']);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+                         ->putJson('/api/user', [
+                             'email' => 'otro@example.com',
+                         ]);
+
+        $response->assertStatus(422);
     }
 }

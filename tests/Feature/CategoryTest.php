@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
-use App\Models\Category;
 
 class CategoryTest extends TestCase
 {
@@ -28,7 +28,7 @@ class CategoryTest extends TestCase
 
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->getJson('/api/categories');
 
         $response->assertStatus(200)
@@ -43,7 +43,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->postJson('/api/categories', [
                              'name' => 'Transporte Bus',
                              'type' => 'gasto',
@@ -56,8 +56,56 @@ class CategoryTest extends TestCase
                  ->assertJsonPath('data.is_default', false);
 
         $this->assertDatabaseHas('categories', [
-            'name'    => 'Transporte Bus',
+            'name' => 'Transporte Bus',
             'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_usuario_puede_crear_categoria_con_color_y_icono()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+                         ->postJson('/api/categories', [
+                             'name' => 'Ropa',
+                             'type' => 'gasto',
+                             'color' => '#2563EB',
+                             'icon' => 'mdi-shirt-outline',
+                         ]);
+
+        $response->assertStatus(201)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonPath('data.name', 'Ropa')
+                 ->assertJsonPath('data.type', 'gasto')
+                 ->assertJsonPath('data.color', '#2563EB');
+    }
+
+    public function test_usuario_puede_actualizar_color_e_icono_de_su_categoria()
+    {
+        $user = User::factory()->create();
+        $category = Category::create([
+            'name' => 'Comida',
+            'type' => 'gasto',
+            'user_id' => $user->id,
+            'is_default' => false,
+        ]);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+                         ->putJson("/api/categories/{$category->id}", [
+                             'color' => '#10B981',
+                             'icon' => 'mdi-food-outline',
+                         ]);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('data.color', '#10B981')
+                 ->assertJsonPath('data.icon', 'mdi-food-outline');
+
+        $this->assertDatabaseHas('categories', [
+            'id' => $category->id,
+            'color' => '#10B981',
+            'icon' => 'mdi-food-outline',
         ]);
     }
 
@@ -67,13 +115,13 @@ class CategoryTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         Category::create([
-            'name'       => 'Libros',
-            'type'       => 'gasto',
-            'user_id'    => $user->id,
+            'name' => 'Libros',
+            'type' => 'gasto',
+            'user_id' => $user->id,
             'is_default' => false,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->postJson('/api/categories', [
                              'name' => 'Libros',
                              'type' => 'gasto',
@@ -87,7 +135,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->postJson('/api/categories', [
                              'name' => 'Invalida',
                              'type' => 'otro_tipo',
@@ -102,13 +150,13 @@ class CategoryTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $global = Category::create([
-            'name'       => 'Alimentación General',
-            'type'       => 'gasto',
+            'name' => 'Alimentación General',
+            'type' => 'gasto',
             'is_default' => true,
-            'user_id'    => null,
+            'user_id' => null,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->putJson("/api/categories/{$global->id}", [
                              'name' => 'Nuevo Nombre',
                          ]);
@@ -122,13 +170,13 @@ class CategoryTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $global = Category::create([
-            'name'       => 'Salario',
-            'type'       => 'ingreso',
+            'name' => 'Salario',
+            'type' => 'ingreso',
             'is_default' => true,
-            'user_id'    => null,
+            'user_id' => null,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
                          ->deleteJson("/api/categories/{$global->id}");
 
         $response->assertStatus(403);
@@ -140,15 +188,15 @@ class CategoryTest extends TestCase
         $userB = User::factory()->create();
 
         $categoryB = Category::create([
-            'name'       => 'Gym User B',
-            'type'       => 'gasto',
+            'name' => 'Gym User B',
+            'type' => 'gasto',
             'is_default' => false,
-            'user_id'    => $userB->id,
+            'user_id' => $userB->id,
         ]);
 
         $tokenA = $userA->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withHeader('Authorization', 'Bearer '.$tokenA)
                          ->putJson("/api/categories/{$categoryB->id}", [
                              'name' => 'Hackeado',
                          ]);
@@ -160,15 +208,15 @@ class CategoryTest extends TestCase
     {
         $user = User::factory()->create();
         $category = Category::create([
-            'name'       => 'Libros',
-            'type'       => 'gasto',
+            'name' => 'Libros',
+            'type' => 'gasto',
             'is_default' => false,
-            'user_id'    => $user->id,
+            'user_id' => $user->id,
         ]);
 
         $token = $user->createToken('test')->plainTextToken;
 
-        $responsePut = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responsePut = $this->withHeader('Authorization', 'Bearer '.$token)
                             ->putJson("/api/categories/{$category->id}", [
                                 'name' => 'Libros y Copias',
                             ]);
@@ -176,7 +224,7 @@ class CategoryTest extends TestCase
         $responsePut->assertStatus(200)
                     ->assertJsonPath('data.name', 'Libros y Copias');
 
-        $responseDel = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseDel = $this->withHeader('Authorization', 'Bearer '.$token)
                             ->deleteJson("/api/categories/{$category->id}");
 
         $responseDel->assertStatus(200);
@@ -188,9 +236,9 @@ class CategoryTest extends TestCase
     {
         $user = User::factory()->create();
         Category::create([
-            'name'       => 'Ahorro Beca',
-            'type'       => 'ingreso',
-            'user_id'    => $user->id,
+            'name' => 'Ahorro Beca',
+            'type' => 'ingreso',
+            'user_id' => $user->id,
             'is_default' => false,
         ]);
 

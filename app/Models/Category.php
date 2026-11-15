@@ -14,6 +14,8 @@ class Category extends Model
         'name',
         'type',
         'is_default',
+        'color',
+        'icon',
     ];
 
     protected $casts = [
