@@ -13,7 +13,7 @@ use App\Http\Resources\UserResource;
 
 // Rutas públicas
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 // Rutas protegidas (Requieren Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
