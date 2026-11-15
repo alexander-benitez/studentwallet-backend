@@ -46,13 +46,17 @@ class CategoryController extends Controller
                 }),
             ],
             'type' => 'required|in:ingreso,gasto',
-        ]);
+            'color' => 'sometimes|nullable|string|max:20',
+            'icon' => 'sometimes|nullable|string|max:100',
+        ], $this->validationMessages());
 
         $category = Category::create([
             'name'       => $validated['name'],
             'type'       => $validated['type'],
             'user_id'    => $userId,
             'is_default' => false,
+            'color'      => $validated['color'] ?? null,
+            'icon'       => $validated['icon'] ?? null,
         ]);
 
         return response()->json([
@@ -108,7 +112,9 @@ class CategoryController extends Controller
                 })->ignore($category->id),
             ],
             'type' => 'sometimes|required|in:ingreso,gasto',
-        ]);
+            'color' => 'sometimes|nullable|string|max:20',
+            'icon' => 'sometimes|nullable|string|max:100',
+        ], $this->validationMessages());
 
         $category->update($validated);
 
@@ -117,6 +123,22 @@ class CategoryController extends Controller
             'message' => 'Categoría actualizada exitosamente',
             'data'    => new CategoryResource($category),
         ], 200);
+    }
+
+    private function validationMessages(): array
+    {
+        return [
+            'name.required' => 'El nombre de la categoría es obligatorio.',
+            'name.string'   => 'El nombre de la categoría debe ser texto.',
+            'name.max'      => 'El nombre no puede superar los 100 caracteres.',
+            'name.unique'   => 'Ya existe una categoría con ese nombre para este tipo.',
+            'type.required' => 'El tipo de categoría es obligatorio.',
+            'type.in'       => 'El tipo debe ser ingreso o gasto.',
+            'color.string'  => 'El color debe ser un valor de texto.',
+            'color.max'     => 'El color no puede superar los 20 caracteres.',
+            'icon.string'   => 'El ícono debe ser un valor de texto.',
+            'icon.max'      => 'El ícono no puede superar los 100 caracteres.',
+        ];
     }
 
     public function destroy(Category $category)

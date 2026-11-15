@@ -3,23 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Budget;
+use App\Models\Category;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class BudgetController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $budgets = Budget::where('user_id', Auth::id())
+        $query = Budget::where('user_id', Auth::id())
             ->with('category')
             ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->get();
+            ->orderBy('month', 'desc');
+
+        if ($request->filled('month')) {
+            $query->where('month', $request->integer('month'));
+        }
+
+        if ($request->filled('year')) {
+            $query->where('year', $request->integer('year'));
+        }
+
+        $budgets = $query->get();
 
         return response()->json([
             'status' => 'success',
-            'data'   => $budgets,
+            'data' => $budgets,
         ], 200);
     }
 
@@ -28,36 +38,61 @@ class BudgetController extends Controller
         $userId = Auth::id();
 
         $validated = $request->validate([
-            'category_id' => [
-                'required',
-                'exists:categories,id',
-                Rule::unique('budgets')->where(function ($query) use ($userId, $request) {
-                    return $query->where('user_id', $userId)
-                                 ->where('category_id', $request->input('category_id'))
-                                 ->where('month', $request->input('month'))
-                                 ->where('year', $request->input('year'));
-                }),
-            ],
+            'category_id' => 'required|exists:categories,id',
             'amount' => 'required|numeric|min:0.01',
-            'month'  => 'required|integer|between:1,12',
-            'year'   => 'required|integer|digits:4',
-        ], [
-            'category_id.unique' => 'Ya existe un presupuesto para esta categoría en ese mes y año.',
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|digits:4',
         ]);
 
-        $budget = Budget::create([
-            'user_id'     => $userId,
-            'category_id' => $validated['category_id'],
-            'amount'      => $validated['amount'],
-            'month'       => $validated['month'],
-            'year'        => $validated['year'],
-        ]);
+        $category = Category::find($validated['category_id']);
+
+        if ($category && ! $category->is_default && $category->user_id !== null && $category->user_id !== $userId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'La categoria seleccionada no pertenece ni esta disponible para el usuario autenticado',
+            ], 403);
+        }
+
+        if ($category && $category->type !== 'gasto') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'El tipo del presupuesto debe corresponder a una categoria de gasto',
+            ], 422);
+        }
+
+        $budget = Budget::where('user_id', $userId)
+            ->where('category_id', $validated['category_id'])
+            ->where('month', $validated['month'])
+            ->where('year', $validated['year'])
+            ->first();
+
+        if ($budget) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ya existe un presupuesto para esta categoría en ese mes y año.',
+            ], 422);
+        }
+
+        try {
+            $budget = Budget::create([
+                'user_id' => $userId,
+                'category_id' => $validated['category_id'],
+                'amount' => $validated['amount'],
+                'month' => $validated['month'],
+                'year' => $validated['year'],
+            ]);
+        } catch (QueryException) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ya existe un presupuesto para esta categoría en ese mes y año.',
+            ], 422);
+        }
 
         $budget->load('category');
 
         return response()->json([
             'status' => 'success',
-            'data'   => $budget,
+            'data' => $budget,
         ], 201);
     }
 
@@ -69,14 +104,14 @@ class BudgetController extends Controller
 
         if (! $budget) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Presupuesto no encontrado',
             ], 404);
         }
 
         return response()->json([
             'status' => 'success',
-            'data'   => $budget,
+            'data' => $budget,
         ], 200);
     }
 
@@ -86,7 +121,7 @@ class BudgetController extends Controller
 
         if (! $budget) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Presupuesto no encontrado',
             ], 404);
         }
@@ -95,9 +130,9 @@ class BudgetController extends Controller
 
         $validated = $request->validate([
             'category_id' => 'sometimes|required|exists:categories,id',
-            'amount'      => 'sometimes|required|numeric|min:0.01',
-            'month'       => 'sometimes|required|integer|between:1,12',
-            'year'        => 'sometimes|required|integer|digits:4',
+            'amount' => 'sometimes|required|numeric|min:0.01',
+            'month' => 'sometimes|required|integer|between:1,12',
+            'year' => 'sometimes|required|integer|digits:4',
         ]);
 
         if ($request->hasAny(['category_id', 'month', 'year'])) {
@@ -110,7 +145,7 @@ class BudgetController extends Controller
 
             if ($duplicate) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'Ya existe un presupuesto para esta categoría en ese mes y año.',
                 ], 422);
             }
@@ -121,7 +156,7 @@ class BudgetController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $budget,
+            'data' => $budget,
         ], 200);
     }
 
@@ -131,7 +166,7 @@ class BudgetController extends Controller
 
         if (! $budget) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Presupuesto no encontrado',
             ], 404);
         }
