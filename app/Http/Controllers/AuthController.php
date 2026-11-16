@@ -18,7 +18,7 @@ class AuthController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|ends_with:@gmail.com|unique:users,email',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:8',
         ]);
 
         $user = User::create([
@@ -109,7 +109,7 @@ class AuthController extends Controller
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'universidad' => 'sometimes|nullable|string|max:255',
             'carrera' => 'sometimes|nullable|string|max:255',
-            'password' => ['sometimes', 'nullable', 'string', 'min:6'],
+            'password' => ['sometimes', 'nullable', 'string', 'min:8'],
         ]);
 
         foreach (['name', 'apellido', 'email', 'universidad', 'carrera'] as $field) {
@@ -135,26 +135,29 @@ class AuthController extends Controller
     public function forgotPassword(Request $request)
     {
         $validated = $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email',
         ]);
 
         $user = User::where('email', $validated['email'])->first();
-        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $genericMessage = 'Si el correo existe, recibirás un código de recuperación.';
 
-        $user->reset_code = $code;
-        $user->reset_code_expires_at = now()->addMinutes(15);
-        $user->save();
+        if ($user) {
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $user->reset_code = $code;
+            $user->reset_code_expires_at = now()->addMinutes(15);
+            $user->save();
 
-        Mail::raw(
-            "Tu código de recuperación es: {$code}. Expira en 15 minutos.",
-            function ($message) use ($user) {
-                $message->to($user->email)->subject('Código de recuperación de contraseña');
-            }
-        );
+            Mail::raw(
+                "Tu código de recuperación es: {$code}. Expira en 15 minutos.",
+                function ($message) use ($user) {
+                    $message->to($user->email)->subject('Código de recuperación de contraseña');
+                }
+            );
+        }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Código de recuperación enviado al correo',
+            'message' => $genericMessage,
         ], 200);
     }
 
@@ -164,7 +167,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email' => 'required|email|exists:users,email',
             'code' => 'required|string|size:6',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::where('email', $validated['email'])->first();
