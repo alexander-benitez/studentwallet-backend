@@ -13,10 +13,15 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'apellido',
         'email',
+        'universidad',
+        'carrera',
         'rol',
         'is_active',
         'password',
+        'reset_code',
+        'reset_code_expires_at',
     ];
 
     protected $hidden = [
@@ -26,6 +31,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'reset_code_expires_at' => 'datetime',
     ];
 
     public function categories()

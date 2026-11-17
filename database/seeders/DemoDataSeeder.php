@@ -15,7 +15,7 @@ class DemoDataSeeder extends Seeder
         // 1. Crear 1 Administrador
         User::create([
             'name' => 'Admin de Prueba',
-            'email' => 'admin@prueba.com',
+            'email' => 'admin@gmail.com',
             'password' => Hash::make('password'),
             'rol' => 'administrador',
             'is_active' => 1,
@@ -23,9 +23,9 @@ class DemoDataSeeder extends Seeder
 
         // 2. Crear 3 Usuarios normales
         $usuarios = [
-            ['name' => 'Estudiante 1', 'email' => 'estudiante1@prueba.com'],
-            ['name' => 'Estudiante 2', 'email' => 'estudiante2@prueba.com'],
-            ['name' => 'Estudiante 3', 'email' => 'estudiante3@prueba.com'],
+            ['name' => 'Estudiante 1', 'email' => 'estudiante1@gmail.com'],
+            ['name' => 'Estudiante 2', 'email' => 'estudiante2@gmail.com'],
+            ['name' => 'Estudiante 3', 'email' => 'estudiante3@gmail.com'],
         ];
 
         foreach ($usuarios as $u) {

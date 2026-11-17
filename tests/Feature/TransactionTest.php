@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Category;
 use App\Models\Transaction;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class TransactionTest extends TestCase
 {
@@ -24,19 +24,19 @@ class TransactionTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $category = Category::create([
-            'name'       => 'Alimentación',
-            'type'       => 'gasto',
+            'name' => 'Alimentación',
+            'type' => 'gasto',
             'is_default' => true,
-            'user_id'    => null,
+            'user_id' => null,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/transactions', [
                 'category_id' => $category->id,
-                'amount'      => 15.50,
-                'type'        => 'gasto',
+                'amount' => 15.50,
+                'type' => 'gasto',
                 'description' => 'Almuerzo universitario',
-                'date'        => '2026-10-31',
+                'date' => '2026-10-31',
             ]);
 
         $response->assertStatus(201)
@@ -46,9 +46,42 @@ class TransactionTest extends TestCase
             ->assertJsonPath('data.description', 'Almuerzo universitario');
 
         $this->assertDatabaseHas('transactions', [
-            'user_id'     => $user->id,
+            'user_id' => $user->id,
             'category_id' => $category->id,
-            'amount'      => 15.50,
+            'amount' => 15.50,
+        ]);
+    }
+
+    public function test_usuario_puede_crear_movimiento_con_concepto()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $category = Category::create([
+            'name' => 'Beca',
+            'type' => 'ingreso',
+            'is_default' => true,
+            'user_id' => null,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/transactions', [
+                'category_id' => $category->id,
+                'amount' => 100.00,
+                'type' => 'ingreso',
+                'concepto' => 'Beca mensual',
+                'date' => '2026-10-31',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.description', 'Beca mensual');
+
+        $this->assertDatabaseHas('transactions', [
+            'user_id' => $user->id,
+            'category_id' => $category->id,
+            'amount' => 100.00,
+            'description' => 'Beca mensual',
         ]);
     }
 
@@ -58,28 +91,28 @@ class TransactionTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $category = Category::create([
-            'name'       => 'Sueldo',
-            'type'       => 'ingreso',
+            'name' => 'Sueldo',
+            'type' => 'ingreso',
             'is_default' => true,
-            'user_id'    => null,
+            'user_id' => null,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/transactions', [
                 'category_id' => $category->id,
-                'amount'      => 0,
-                'type'        => 'ingreso',
-                'date'        => '2026-10-31',
+                'amount' => 0,
+                'type' => 'ingreso',
+                'date' => '2026-10-31',
             ]);
 
         $response->assertStatus(422);
 
-        $responseNeg = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseNeg = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/transactions', [
                 'category_id' => $category->id,
-                'amount'      => -20.00,
-                'type'        => 'ingreso',
-                'date'        => '2026-10-31',
+                'amount' => -20.00,
+                'type' => 'ingreso',
+                'date' => '2026-10-31',
             ]);
 
         $responseNeg->assertStatus(422);
@@ -91,18 +124,18 @@ class TransactionTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $categoryGasto = Category::create([
-            'name'       => 'Transporte',
-            'type'       => 'gasto',
+            'name' => 'Transporte',
+            'type' => 'gasto',
             'is_default' => true,
-            'user_id'    => null,
+            'user_id' => null,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/transactions', [
                 'category_id' => $categoryGasto->id,
-                'amount'      => 50.00,
-                'type'        => 'ingreso',
-                'date'        => '2026-10-31',
+                'amount' => 50.00,
+                'type' => 'ingreso',
+                'date' => '2026-10-31',
             ]);
 
         $response->assertStatus(422)
@@ -116,18 +149,18 @@ class TransactionTest extends TestCase
         $tokenA = $userA->createToken('test')->plainTextToken;
 
         $categoryB = Category::create([
-            'name'       => 'Privada de B',
-            'type'       => 'gasto',
+            'name' => 'Privada de B',
+            'type' => 'gasto',
             'is_default' => false,
-            'user_id'    => $userB->id,
+            'user_id' => $userB->id,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withHeader('Authorization', 'Bearer '.$tokenA)
             ->postJson('/api/transactions', [
                 'category_id' => $categoryB->id,
-                'amount'      => 10.00,
-                'type'        => 'gasto',
-                'date'        => '2026-10-31',
+                'amount' => 10.00,
+                'type' => 'gasto',
+                'date' => '2026-10-31',
             ]);
 
         $response->assertStatus(403);
@@ -139,33 +172,33 @@ class TransactionTest extends TestCase
         $userB = User::factory()->create();
 
         $category = Category::create([
-            'name'       => 'Comida',
-            'type'       => 'gasto',
+            'name' => 'Comida',
+            'type' => 'gasto',
             'is_default' => true,
-            'user_id'    => null,
+            'user_id' => null,
         ]);
 
         Transaction::create([
-            'user_id'     => $userA->id,
+            'user_id' => $userA->id,
             'category_id' => $category->id,
-            'amount'      => 12.00,
-            'type'        => 'gasto',
-            'date'        => '2026-10-31',
+            'amount' => 12.00,
+            'type' => 'gasto',
+            'date' => '2026-10-31',
             'description' => 'Cena de User A',
         ]);
 
         Transaction::create([
-            'user_id'     => $userB->id,
+            'user_id' => $userB->id,
             'category_id' => $category->id,
-            'amount'      => 30.00,
-            'type'        => 'gasto',
-            'date'        => '2026-10-31',
+            'amount' => 30.00,
+            'type' => 'gasto',
+            'date' => '2026-10-31',
             'description' => 'Gasto secreto User B',
         ]);
 
         $tokenA = $userA->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withHeader('Authorization', 'Bearer '.$tokenA)
             ->getJson('/api/transactions');
 
         $response->assertStatus(200)
@@ -182,20 +215,20 @@ class TransactionTest extends TestCase
         $category = Category::create(['name' => 'General', 'type' => 'gasto', 'is_default' => true, 'user_id' => null]);
 
         $txB = Transaction::create([
-            'user_id'     => $userB->id,
+            'user_id' => $userB->id,
             'category_id' => $category->id,
-            'amount'      => 20.00,
-            'type'        => 'gasto',
-            'date'        => '2026-10-31',
+            'amount' => 20.00,
+            'type' => 'gasto',
+            'date' => '2026-10-31',
         ]);
 
         $tokenA = $userA->createToken('test')->plainTextToken;
 
-        $resPut = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $resPut = $this->withHeader('Authorization', 'Bearer '.$tokenA)
             ->putJson("/api/transactions/{$txB->id}", ['amount' => 99.00]);
         $resPut->assertStatus(403);
 
-        $resDel = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $resDel = $this->withHeader('Authorization', 'Bearer '.$tokenA)
             ->deleteJson("/api/transactions/{$txB->id}");
         $resDel->assertStatus(403);
     }

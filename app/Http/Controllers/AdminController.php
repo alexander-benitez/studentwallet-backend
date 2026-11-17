@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Suggestion;
+use App\Models\User;
+use App\Services\AdminReportService;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
     public function users()
     {
-        $users = User::select("id", "name", "email", "rol", "is_active", "created_at")
-            ->orderBy("id", "desc")
+        $users = User::select('id', 'name', 'email', 'rol', 'is_active', 'created_at')
+            ->orderBy('id', 'desc')
             ->get();
 
         return response()->json([
-            "status" => "success",
-            "data" => $users
+            'status' => 'success',
+            'data' => $users,
         ], 200);
     }
 
@@ -24,63 +25,64 @@ class AdminController extends Controller
     {
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
-                "status" => "error",
-                "message" => "Usuario no encontrado"
+                'status' => 'error',
+                'message' => 'Usuario no encontrado',
             ], 404);
         }
 
         $request->validate([
-            "is_active" => "required|boolean"
+            'is_active' => 'required|boolean',
         ]);
 
         $user->is_active = $request->is_active;
         $user->save();
 
         return response()->json([
-            "status" => "success",
-            "message" => "Estado del usuario actualizado exitosamente",
-            "data" => [
-                "id" => $user->id,
-                "name" => $user->name,
-                "is_active" => $user->is_active
-            ]
+            'status' => 'success',
+            'message' => 'Estado del usuario actualizado exitosamente',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'is_active' => $user->is_active,
+            ],
         ], 200);
     }
 
     public function suggestions()
     {
-        $suggestions = Suggestion::with("user:id,name,email")
-            ->orderBy("created_at", "desc")
+        $suggestions = Suggestion::with('user:id,name,email')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
-            "status" => "success",
-            "data" => $suggestions
+            'status' => 'success',
+            'data' => $suggestions,
         ], 200);
     }
 
     public function storeSuggestion(Request $request)
     {
         $request->validate([
-            "message" => "required|string|max:1000",
-            "title" => "nullable|string|max:150"
+            'message' => 'required|string|max:1000',
+            'title' => 'nullable|string|max:150',
         ]);
 
         $suggestion = Suggestion::create([
-            "user_id" => $request->user()->id,
-            "title" => $request->title,
-            "message" => $request->message,
-            "status" => "pendiente"
+            'user_id' => $request->user()->id,
+            'title' => $request->title,
+            'message' => $request->message,
+            'status' => 'pendiente',
         ]);
 
         return response()->json([
-            "status" => "success",
-            "message" => "Sugerencia enviada correctamente",
-            "data" => $suggestion
+            'status' => 'success',
+            'message' => 'Sugerencia enviada correctamente',
+            'data' => $suggestion,
         ], 201);
     }
+
     public function mySuggestions(Request $request)
     {
         $suggestions = Suggestion::where('user_id', $request->user()->id)
@@ -89,7 +91,47 @@ class AdminController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $suggestions
+            'data' => $suggestions,
+        ], 200);
+    }
+
+    public function reports(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+        ]);
+
+        $data = (new AdminReportService())->getReportData($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $data,
+        ], 200);
+    }
+
+    public function updateSuggestionStatus(Request $request, $id)
+    {
+        $suggestion = Suggestion::find($id);
+
+        if (! $suggestion) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Sugerencia no encontrada',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:pendiente,leida,resuelta',
+        ]);
+
+        $suggestion->status = $validated['status'];
+        $suggestion->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Estado actualizado correctamente',
+            'data' => $suggestion,
         ], 200);
     }
 }
